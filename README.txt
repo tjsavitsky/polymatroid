@@ -1,5 +1,5 @@
 kpolyext.py is a reimplementation in Python3 of the algorithm for enumerating
-2-polymatroids found in:
+integer polymatroids found in:
 
 Thomas J. Savitsky. Enumeration of 2-polymatroids on up to seven elements.
 SIAM J. Discrete Math., 28(4) (2014), 1641--1650.
