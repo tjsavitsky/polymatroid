@@ -9,7 +9,6 @@ class KPolyMatroid:
     """A k-polymatroid"""
 
     def __init__(self):
-        self.maxn = 16  # matroids on 10 elements still haven't been enumerated
         self.flats = {}
         self.n = None
         self.flat_array = None
@@ -139,7 +138,7 @@ class KPolyMatroid:
             return mask
         if mask in self.closure_memo:
             return self.closure_memo[mask]
-        closure = (1 << self.maxn) - 1
+        closure = (1 << self.n) - 1
         for f in self.flats:
             if (mask & f == mask):
                 closure &= f
