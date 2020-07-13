@@ -17,6 +17,7 @@ class KPolyMatroid:
         self.flat_containment_graph = None
         self.flat_cover_graph = None
         self.closure_memo = {}
+        self.delta_memo = {}
 
     def __str__(self):
         ans = ''
@@ -147,8 +148,13 @@ class KPolyMatroid:
 
     def delta(self,f,g):
         """calculate modular defect"""
-        return (self.flats[f] + self.flats[g] -
-                self.flats[f&g] - self.flats[self.closure(f|g)])
+        if (f,g) in self.delta_memo:
+            return self.delta_memo[(f,g)]
+        md = (self.flats[f] + self.flats[g] - self.flats[f&g] -
+                self.flats[self.closure(f|g)])
+        self.delta_memo[(f,g)] = md
+        self.delta_memo[(g,f)] = md
+        return md
 
     def canonical_deletion(self):
         """returns the polymatroid obtained by:
@@ -182,8 +188,7 @@ class KPolyMatroid:
                 intrank = self.flats[intmask]
                 unionmask = self.closure(fmask|gmask)
                 unionrank = self.flats[unionmask]
-                modular_defect = frank + grank - intrank - unionrank
-                if (mu[intmask] + mu[unionmask] - modular_defect >
+                if (mu[intmask] + mu[unionmask] - self.delta(fmask,gmask) >
                     mu[fmask] + mu[gmask]):
                     return False
 
@@ -194,7 +199,7 @@ class KPolyMatroid:
                 grank, gmask = ary[j]
                 if frank + mu[fmask] > grank + mu[gmask]:
                     return False
-                if mu[gmask] > mu[fmask]:
+                if mu[gmask] > mu[fmask]:  #this check should be unnecessary
                     return False
 
         return True
