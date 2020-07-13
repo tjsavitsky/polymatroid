@@ -180,6 +180,7 @@ class KPolyMatroid:
         ary = self.get_flat_array()
         numflats = len(ary)
 
+        # condition I of Th. 3.3 could fail
         for i in range(numflats):
             frank, fmask = ary[i]
             for j in range(i+1, numflats):
@@ -191,17 +192,6 @@ class KPolyMatroid:
                 if (mu[intmask] + mu[unionmask] - self.delta(fmask,gmask) >
                     mu[fmask] + mu[gmask]):
                     return False
-
-        cont = self.get_flat_containment_graph()
-        for i in range(numflats):
-            frank, fmask = ary[i]
-            for j in cont.neighborhood(i, mode='out', mindist=1):
-                grank, gmask = ary[j]
-                if frank + mu[fmask] > grank + mu[gmask]:
-                    return False
-                if mu[gmask] > mu[fmask]:  #this check should be unnecessary
-                    return False
-
         return True
 
     def produce_ext_from_mu(self, mu):
@@ -235,9 +225,23 @@ class KPolyMatroid:
         """certain flats are required to be in mu_c"""
         ary = self.get_flat_array()
         cont = self.get_flat_containment_graph()
-        forced = 1
-        muorig = mu.copy()
+        covers = self.get_flat_cover_graph()
 
+        # ensure condition II of Th. 3.3
+        for i in range(len(ary)):
+            frank, fmask = ary[i]
+            if fmask in mu:
+                continue
+            for j in covers.neighborhood(i, mode='out', mindist=1):
+                grank, gmask = ary[j]
+                if gmask not in mu:
+                    continue
+                if (c == grank + mu[gmask] - frank):
+                    mu[fmask] = c
+                    break
+
+        # ensure condition I of Th. 3.3
+        forced = 1
         while (forced > 0):
             forced = 0
             mucpy = mu.copy()
@@ -249,33 +253,16 @@ class KPolyMatroid:
                               mu[self.closure(f|g)]):
                         forced += 1
                         mu[f&g] = c
-                        # ensure up-closure
+                        # ensure condition III
                         i = self.flat_lookup[f&g]
                         for j in cont.neighborhood(i, mode='out', mindist=1):
                             grank, gmask = ary[j]
                             if gmask not in mu:
                                 mu[gmask] = c
 
-            for i in range(len(ary)):
-                frank, fmask = ary[i]
-                if fmask in mu:
-                    continue
-                for j in cont.neighborhood(i, mode='out', mindist=1):
-                    grank, gmask = ary[j]
-                    if gmask not in mu:
-                        continue
-                    if (c == grank + mu[gmask] - frank):
-                        forced += 1
-                        mu[fmask] = c
-                        # ensure up-closure
-                        for k in cont.neighborhood(i, mode='out', mindist=1):
-                            grank, gmask = ary[k]
-                            if gmask not in mu:
-                                mu[gmask] = c
-                        break
         return mu
 
-    def get_mui_graph(self, c, mu):
+    def get_mu_graph(self, c, mu):
         """The independent sets in this graph are candidates
             for the minimal elements of mu_c."""
         ary = self.get_flat_array()
@@ -335,9 +322,9 @@ class KPolyMatroid:
         else:
             ary = self.get_flat_array()
             cont = self.get_flat_containment_graph()
-            # certain flats will be forced to have mu[f] = i
+            # certain flats will be forced to have mu[f] = clevel
             mu = self.force_mu(clevel, mu)
-            g = self.get_mui_graph(clevel, mu)
+            g = self.get_mu_graph(clevel, mu)
             I = g.independent_vertex_sets()
             I.append(())  # add the empty set
             for X in I:
