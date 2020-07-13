@@ -16,6 +16,7 @@ class KPolyMatroid:
         self.flat_lookup = {} # the index of a mask in the flat array
         self.flat_containment_graph = None
         self.flat_cover_graph = None
+        self.closure_memo = {}
 
     def __str__(self):
         ans = ''
@@ -135,10 +136,13 @@ class KPolyMatroid:
     def closure(self, mask):
         if mask in self.flats:
             return mask
+        if mask in self.closure_memo:
+            return self.closure_memo[mask]
         closure = (1 << self.maxn) - 1
         for f in self.flats:
             if (mask & f == mask):
                 closure &= f
+        self.closure_memo[mask] = closure
         return closure
 
     def delta(self,f,g):
