@@ -173,24 +173,27 @@ class KPolyMatroid:
             
         return deletion.canonical_label()
 
-    def check_mu(self, mu):
-        """returns True if the dictionary mu leads to a single-element
-            extension"""
-        ary = self.get_flat_array()
-        numflats = len(ary)
-
-        # condition I of Th. 3.3 could fail
-        for i in range(numflats):
-            frank, fmask = ary[i]
-            for j in range(i+1, numflats):
-                grank, gmask = ary[j]
-                intmask = fmask & gmask
-                intrank = self.flats[intmask]
-                unionmask = self.closure(fmask|gmask)
-                unionrank = self.flats[unionmask]
-                if (mu[intmask] + mu[unionmask] - self.delta(fmask,gmask) >
-                    mu[fmask] + mu[gmask]):
+    def check_mu(self, mu, c):
+        """returns True if the mu constructed so far
+            could lead to a single-element extension"""
+        # only condition I of Th. 3.3 could fail at this point, and
+        # only for flats just added to mu_c
+        mu_c = {}
+        for f in mu:
+            if mu[f] == c:
+                mu_c[f] = c
+    
+        for f in mu:
+            for g in mu_c:
+                if f == g:
+                    continue
+                k = mu[f] + c - mu[self.closure(f|g)] + self.delta(f,g)
+                if (f&g) in mu_c:
+                    if c > k:
+                        return False
+                elif c+1 > k:  #if c <= k, mu[f&g] can be assigned later
                     return False
+
         return True
 
     def produce_ext_from_mu(self, mu):
@@ -226,16 +229,17 @@ class KPolyMatroid:
         cont = self.get_flat_containment_graph()
         covers = self.get_flat_cover_graph()
 
+        mucpy = mu.copy()
         # ensure condition II of Th. 3.3
         for i in range(len(ary)):
             frank, fmask = ary[i]
-            if fmask in mu:
+            if fmask in mucpy:
                 continue
             for j in covers.neighborhood(i, mode='out', mindist=1):
                 grank, gmask = ary[j]
-                if gmask not in mu:
+                if gmask not in mucpy:
                     continue
-                if (c == grank + mu[gmask] - frank):
+                if (c == grank + mucpy[gmask] - frank):
                     mu[fmask] = c
                     break
 
@@ -248,7 +252,7 @@ class KPolyMatroid:
                 for g in mucpy:
                     if (f >= g) or (f&g in mu):
                         continue
-                    if c == (mu[f] + mu[g] + self.delta(f,g) -
+                    if c == (mucpy[f] + mucpy[g] + self.delta(f,g) -
                               mu[self.closure(f|g)]):
                         forced += 1
                         mu[f&g] = c
@@ -262,14 +266,14 @@ class KPolyMatroid:
         return mu
 
     def get_mu_graph(self, c, mu):
-        """The independent sets in this graph are candidates
-            for the minimal elements of mu_c."""
+        """The independent sets in this graph are candidates for
+            minimal elements of mu_c that have not already been forced in."""
         ary = self.get_flat_array()
         numflats = len(ary)
-        g = Graph()
+        gph = Graph()
 
         for i in range(numflats):
-            g.add_vertex(i)
+            gph.add_vertex(i)
 
         deletions = {}
         for i in range(numflats):
@@ -281,49 +285,53 @@ class KPolyMatroid:
             frank, fmask = ary[i]
             if fmask in mu:
                 for j in range(numflats):
-                    if (i==j) or (j in deletions):
+                    if j in deletions:
                         continue
                     grank, gmask = ary[j]
                     k = (mu[fmask] + c + self.delta(fmask,gmask) -
                             mu[self.closure(fmask|gmask)])
-                    if (k < c):
-                        # g cannot be in mu_c
+                    if (c > k):
+                        # f,g fails condition I if g is in mu_c
                         deletions[j] = True
-                    elif (k == c) and (fmask & gmask != gmask):
-                        # g cannot be a minimal member of mu_c
+                    elif (c == k) and (fmask & gmask != gmask):
+                        # f,g fails if g is a minimal member of mu_c
                         deletions[j] = True
-            else:
-                for j in range(i+1, numflats):
-                    if (i in deletions) or (j in deletions):
-                        continue
-                    grank, gmask = ary[j]                    
-                    if ((fmask & gmask == gmask) or (fmask & gmask == fmask)):
-                        g.add_edge(i,j)
-                        continue
-                    union = self.closure(fmask|gmask)
-                    if union in mu:
-                        mu_union = mu[union]
-                    else:
-                        mu_union = c
-                    if 2*c + self.delta(fmask,gmask) - mu_union <= c:
-                        g.add_edge(i,j)
 
-        g.delete_vertices(deletions.keys())
-        return g    
+        for i in range(numflats):
+            if i in deletions:
+                continue
+            frank, fmask = ary[i]
+            for j in range(i+1, numflats):
+                if j in deletions:
+                    continue
+                grank, gmask = ary[j]                    
+                if ((fmask & gmask == gmask) or (fmask & gmask == fmask)):
+                    gph.add_edge(i,j)
+                    continue
+                union = self.closure(fmask|gmask)
+                if union in mu:
+                    mu_union = mu[union]
+                else:
+                    mu_union = c
+                if c+1 > 2*c + self.delta(fmask,gmask) - mu_union:
+                    gph.add_edge(i,j)
 
-    def ext_generator(self, clevel, maxc, mu):
+        gph.delete_vertices(deletions.keys())
+        return gph
+
+    def ext_generator(self, c, maxc, mu):
         """recursively yield candidates for mu"""
-        if clevel == maxc:
+        if c == maxc:
             for f in self.flats:
                 if f not in mu:
-                    mu[f] = clevel
+                    mu[f] = c
             yield mu
         else:
             ary = self.get_flat_array()
             cont = self.get_flat_containment_graph()
-            # certain flats will be forced to have mu[f] = clevel
-            mu = self.force_mu(clevel, mu)
-            g = self.get_mu_graph(clevel, mu)
+            # certain flats will be forced to have mu[f] = c
+            mu = self.force_mu(c, mu)
+            g = self.get_mu_graph(c, mu)
             I = g.independent_vertex_sets()
             I.append(())  # add the empty set
             for X in I:
@@ -331,28 +339,59 @@ class KPolyMatroid:
                 nextmu = mu.copy()
                 for i in minimals:
                     frank, fmask = ary[i]
-                    nextmu[fmask] = clevel
+                    nextmu[fmask] = c
                     for j in cont.neighborhood(i, mode='out', mindist=1):
                         grank, gmask = ary[j]
                         if gmask not in nextmu:
-                            nextmu[gmask] = clevel
-                yield from self.ext_generator(clevel+1, maxc, nextmu)
+                            nextmu[gmask] = c
+                if self.check_mu(nextmu, c):
+                    yield from self.ext_generator(c+1, maxc, nextmu)
+
+    def check_mu_debug(self, mu):
+        """returns True if the dictionary mu leads to a single-element
+            extension"""
+        ary = self.get_flat_array()
+        numflats = len(ary)
+        for i in range(numflats):
+            frank, fmask = ary[i]
+            for j in range(numflats):
+                grank, gmask = ary[j]
+                # condition I
+                intmask = fmask & gmask
+                intrank = self.flats[intmask]
+                unionmask = self.closure(fmask|gmask)
+                unionrank = self.flats[unionmask]
+                if (mu[intmask] + mu[unionmask] - self.delta(fmask,gmask) >
+                    mu[fmask] + mu[gmask]):
+                    return False
+                # condition II
+                if (fmask & gmask == fmask):
+                    if (self.flats[fmask] + mu[fmask] > self.flats[gmask]
+                        + mu[gmask]):
+                        return False
+                # condition III
+                if (fmask & gmask == fmask):
+                    if mu[gmask] > mu[fmask]:
+                        return False
+        return True
 
     def extend(self, all, c, outf):
         """find all single-element extensions"""
         collection = {}
         for mu in self.ext_generator(0, c, {}):
-            if self.check_mu(mu):
-                ext = self.produce_ext_from_mu(mu)
-                if all:
-                    outf.write(str(ext)+'\n')
-                else:
-                    canonext = ext.canonical_label()
-                    canondel = canonext.canonical_deletion()
-                    if (str(self) == str(canondel) and
+            #if not self.check_mu_debug(mu):
+            #    print("Bad extension.  c=", c, "mu=", mu)
+            #    exit(1)
+            ext = self.produce_ext_from_mu(mu)
+            if all:
+                outf.write(str(ext)+'\n')
+            else:
+                canonext = ext.canonical_label()
+                canondel = canonext.canonical_deletion()
+                if (str(self) == str(canondel) and
                         str(canonext) not in collection):
-                            collection[str(canonext)] = True
-                            outf.write(str(canonext)+'\n')
+                    collection[str(canonext)] = True
+                    outf.write(str(canonext)+'\n')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='kpolyext.py',
