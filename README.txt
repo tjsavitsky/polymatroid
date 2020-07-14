@@ -4,7 +4,7 @@ integer polymatroids found in:
 Thomas J. Savitsky. Enumeration of 2-polymatroids on up to seven elements.
 SIAM J. Discrete Math., 28(4) (2014), 1641--1650.
 
-It requires the ipython package for python.
+It requires the python-igraph package for python.
 
 The following commands will generate a catalog of 2-polymatroids.
 
