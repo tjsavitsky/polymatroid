@@ -11,6 +11,7 @@ class KPolyMatroid:
     def __init__(self):
         self.flats = {}
         self.n = None
+        self.numflats = None
         self.flat_array = None
         self.flat_lookup = {} # the index of a mask in the flat array
         self.flat_containment_graph = None
@@ -37,10 +38,9 @@ class KPolyMatroid:
             ary.append((self.flats[mask], mask))
         ary.sort()
         self.flat_array = ary
-
-        for i in range(len(ary)):
+        self.numflats = len(ary)
+        for i in range(self.numflats):
             self.flat_lookup[ary[i][1]] = i
-
         return ary
 
     def get_flat_containment_graph(self):
@@ -50,7 +50,7 @@ class KPolyMatroid:
         if self.flat_containment_graph is not None:
             return self.flat_containment_graph
         ary = self.get_flat_array()
-        numflats = len(ary)
+        numflats = self.numflats
         g = Graph(n=numflats, directed=True)
         edges = []
     
@@ -72,8 +72,8 @@ class KPolyMatroid:
         if self.flat_cover_graph is not None:
             return self.flat_cover_graph
         ary = self.get_flat_array()
+        numflats = self.numflats
         cont = self.get_flat_containment_graph()
-        numflats = cont.vcount()
         g = Graph(n=numflats, directed=True)
         edges = []
         for i in range(numflats):
@@ -117,13 +117,14 @@ class KPolyMatroid:
     def canonical_label(self):
         """Returns a copy of self that is canonically labeled."""
         ary = self.get_flat_array()
+        numflats = self.numflats
 
         # create a bipartite graph representing the polymatroid
         g = Graph()
-        g.add_vertices(self.n + len(ary))
+        g.add_vertices(self.n + numflats)
         edges = []
         colors = [0] * self.n
-        for i in range(len(ary)):
+        for i in range(numflats):
             r, mask = ary[i]
             colors.append(r+1) #color flats by their rank + 1
             for j in range(self.n):
@@ -232,12 +233,13 @@ class KPolyMatroid:
     def force_mu(self, c, mu):
         """certain flats are required to be in mu_c"""
         ary = self.get_flat_array()
+        numflats = self.numflats
         cont = self.get_flat_containment_graph()
         covers = self.get_flat_cover_graph()
 
         mucpy = mu.copy()
         # ensure condition II of Th. 3.3
-        for i in range(len(ary)):
+        for i in range(numflats):
             frank, fmask = ary[i]
             if fmask in mucpy:
                 continue
@@ -275,7 +277,7 @@ class KPolyMatroid:
         """The independent sets in this graph are candidates for
             minimal elements of mu_c that have not already been forced in."""
         ary = self.get_flat_array()
-        numflats = len(ary)
+        numflats = self.numflats
         edges = []
         gph = Graph()
 
@@ -358,7 +360,7 @@ class KPolyMatroid:
         """returns True if the dictionary mu leads to a single-element
             extension"""
         ary = self.get_flat_array()
-        numflats = len(ary)
+        numflats = self.numflats
         for i in range(numflats):
             frank, fmask = ary[i]
             for j in range(numflats):
@@ -439,5 +441,3 @@ if __name__ == "__main__":
             continue
         kpm.extend(results.all, results.max_rank, outf)
 
-    inf.close()
-    outf.close()
