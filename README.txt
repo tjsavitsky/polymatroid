@@ -8,7 +8,7 @@ It requires the ipython package for python.
 
 The following commands will generate a catalog of 2-polymatroids.
 
-    $ echo -n '0,0' > n0.2pm.txt
+    $ echo '0,0' > n0.2pm.txt
     $ python3 kpolyext.py -c 2 n0.2pm.txt n1.2pm.txt 
     $ python3 kpolyext.py -c 2 n1.2pm.txt n2.2pm.txt
     $ python3 kpolyext.py -c 2 n2.2pm.txt n3.2pm.txt
@@ -16,6 +16,11 @@ The following commands will generate a catalog of 2-polymatroids.
     $ python3 kpolyext.py -c 2 n4.2pm.txt n5.2pm.txt
     $ python3 kpolyext.py -c 2 n5.2pm.txt n6.2pm.txt
     $ python3 kpolyext.py -c 2 n6.2pm.txt n7.2pm.txt
+
+GNU Parallel can be used to speed up the process.  For example,
+the last command can be parallelized as follows:
+    $ cat n6.2pm.txt | parallel --pipe --progress -N1 \
+        'python3 kpolyext.py -c 2' > n7.2pm.txt
 
 Polymatroids are represented as space-separated lists of flats and
 their ranks.  Flats are given as bitmasks in hexadecimal without
@@ -25,7 +30,7 @@ two lines placed freely in the plane.
 
 The following commands will generate a catalog of matroids.
 
-    $ echo -n '0,0' > n0.matroids.txt
+    $ echo '0,0' > n0.matroids.txt
     $ python3 kpolyext.py -c 1 n0.matroids.txt n1.matroids.txt
     $ python3 kpolyext.py -c 1 n1.matroids.txt n2.matroids.txt
     $ python3 kpolyext.py -c 1 n2.matroids.txt n3.matroids.txt
@@ -35,11 +40,6 @@ The following commands will generate a catalog of matroids.
     $ python3 kpolyext.py -c 1 n6.matroids.txt n7.matroids.txt
     $ python3 kpolyext.py -c 1 n7.matroids.txt n8.matroids.txt
     $ python3 kpolyext.py -c 1 n8.matroids.txt n9.matroids.txt
-
-GNU Parallel can be used to speed up the process.  For example,
-the last command can be parallelized as follows:
-    $ cat n8.matroids.txt | parallel -N1 --pipe --progress \
-        'python3 kpolyext.py -c 1' > n9.matroids.txt
 
 Two perl scripts are present.  One converts the bitstrings
 representing a polymatroid to a more human-readable format.
