@@ -36,7 +36,8 @@ the last command can be parallelized as follows:
         'python3 kpolyext.py -c 2' > n7.2pm.txt
 
 The last command may take several days to execute on a typical
-desktop computer.
+desktop computer.  One may wish to use the shuf command instead
+of cat when generating catalogs.
 
 Small catalogs of k-polymatroids for k>2 can also be generated.
 
