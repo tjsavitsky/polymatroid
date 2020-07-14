@@ -52,14 +52,16 @@ class KPolyMatroid:
         ary = self.get_flat_array()
         numflats = len(ary)
         g = Graph(n=numflats, directed=True)
+        edges = []
     
         for i in range(numflats):
             for j in range(numflats):
                 if i==j:
                     continue
                 if (ary[i][1] & ary[j][1]) == ary[i][1]:
-                    g.add_edge(i,j)
+                    edges.append((i,j))
 
+        g.add_edges(edges)
         self.flat_containment_graph = g
         return g
         
@@ -73,6 +75,7 @@ class KPolyMatroid:
         cont = self.get_flat_containment_graph()
         numflats = cont.vcount()
         g = Graph(n=numflats, directed=True)
+        edges = []
         for i in range(numflats):
             for j in cont.neighborhood(i, mode='out', mindist=1):
                 iscovered = True
@@ -83,7 +86,8 @@ class KPolyMatroid:
                         iscovered = False
                         break
                 if iscovered:
-                    g.add_edge(i,j)
+                    edges.append((i,j))
+        g.add_edges(edges)
         self.flat_cover_graph = g
         return g
 
@@ -117,14 +121,16 @@ class KPolyMatroid:
         # create a bipartite graph representing the polymatroid
         g = Graph()
         g.add_vertices(self.n + len(ary))
+        edges = []
         colors = [0] * self.n
         for i in range(len(ary)):
             r, mask = ary[i]
             colors.append(r+1) #color flats by their rank + 1
             for j in range(self.n):
                 if (1<<j) & mask:
-                    g.add_edge(j,self.n+i)
+                    edges.append((j,self.n+i))
 
+        g.add_edges(edges) #massive speedup compared to adding one-by-one
         labeling = g.canonical_permutation(color=colors)
 
         canon = KPolyMatroid()
@@ -270,10 +276,10 @@ class KPolyMatroid:
             minimal elements of mu_c that have not already been forced in."""
         ary = self.get_flat_array()
         numflats = len(ary)
+        edges = []
         gph = Graph()
 
-        for i in range(numflats):
-            gph.add_vertex(i)
+        gph.add_vertices(range(numflats)) # we need the vertex labels
 
         deletions = {}
         for i in range(numflats):
@@ -306,7 +312,7 @@ class KPolyMatroid:
                     continue
                 grank, gmask = ary[j]                    
                 if ((fmask & gmask == gmask) or (fmask & gmask == fmask)):
-                    gph.add_edge(i,j)
+                    edges.append((i,j))
                     continue
                 union = self.closure(fmask|gmask)
                 if union in mu:
@@ -314,8 +320,9 @@ class KPolyMatroid:
                 else:
                     mu_union = c
                 if c+1 > 2*c + self.delta(fmask,gmask) - mu_union:
-                    gph.add_edge(i,j)
+                    edges.append((i,j))
 
+        gph.add_edges(edges)
         gph.delete_vertices(deletions.keys())
         return gph
 
