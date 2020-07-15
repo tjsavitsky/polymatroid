@@ -2,7 +2,7 @@
 
 my %hash = ();
 my $count = 0;
-my $intermed = 1000000;
+my $intermed = 100000000;
 
 while (<>) {
 	my $line = $_;
