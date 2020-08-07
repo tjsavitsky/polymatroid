@@ -2,7 +2,7 @@
 #cython: language_level=3
 
 # Thomas J. Savitsky
-# July 10, 2020
+# August 7, 2020
 
 from igraph import *
 
@@ -385,7 +385,7 @@ class KPolyMatroid:
                         return False
         return True
 
-    def extend(self, all, c, outf):
+    def extend(self, all, c, max_r, outf):
         """find all single-element extensions"""
         collection = {}
         for mu in self.ext_generator(0, c, {}):
@@ -393,6 +393,9 @@ class KPolyMatroid:
             #    print("Bad extension.  c=", c, "mu=", mu)
             #    exit(1)
             ext = self.produce_ext_from_mu(mu)
+            if (max_r is not None):
+                if ext.flats[(1<<ext.n)-1] > max_r:
+                    continue
             if all:
                 outf.write(str(ext)+'\n')
             else:

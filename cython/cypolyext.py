@@ -1,9 +1,9 @@
 # Thomas J. Savitsky
-# July 10, 2020
+# August 7, 2020
 
 import argparse
 import sys
-import kpolymatroid
+from kpolymatroid import KPolyMatroid
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='kpolyext.py',
@@ -16,7 +16,10 @@ if __name__ == "__main__":
         default=False)
     parser.add_argument('-c', help='The maximum rank of the new element. '\
             'Defaults to 1.', action='store',
-            dest='max_rank', default=1, type=int)
+            dest='max_c', default=1, type=int)
+    parser.add_argument('-r', help='Restrict extensions to have rank at most r.'\
+            'Defaults to None.', action='store',
+            dest='max_r', default=None, type=int)
     parser.add_argument('--version', action='version', version='%(prog)s 0.01')
     parser.add_argument('infile', help='name of input file',
         nargs='?', default=None, action='store')
@@ -36,11 +39,11 @@ if __name__ == "__main__":
         outf = open(results.outfile, 'w')
 
     for line in inf.readlines():
-        kpm = kpolymatroid.KPolyMatroid()
+        kpm = KPolyMatroid()
         kpm.read_flats_str(line.rstrip())
         if results.label:
             canon = kpm.canonical_label()
             outf.write(str(canon)+'\n')
             continue
-        kpm.extend(results.all, results.max_rank, outf)
+        kpm.extend(results.all, results.max_c, results.max_r, outf)
 
