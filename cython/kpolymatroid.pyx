@@ -105,7 +105,7 @@ class KPolyMatroid:
             rank = int(flat[1])
             self.flats[bitmask] = rank
             if rank > maxrank:
-                rank = maxrank
+                maxrank = rank
                 self.n = bin(bitmask).count("1")
 
     def relabel_flat(self, mask, label):
