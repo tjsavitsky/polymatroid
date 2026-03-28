@@ -6,8 +6,9 @@ SIAM J. Discrete Math., 28(4) (2014), 1641--1650.
 
 It requires the python-igraph package for python.
 
-Update: May 28, 2026.  It has *only* been tested with version 0.11.4
-of igraph.  Later versions are known to give incorrect results!  Beware!
+Update: March 28, 2026.  This program has *only* been tested thoroughly with
+version 0.11.4 of igraph.  I expect it to work with version 0.11.9; however,
+it gives gives incorrect results when used with version 1.0.0 of igraph!
 
 The following commands will generate a catalog of matroids.
 
